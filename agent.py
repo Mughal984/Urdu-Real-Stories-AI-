@@ -130,8 +130,8 @@ def create_thumbnail(text):
 def create_video(slides, audio):
     concat=WORK/"slides.txt"
     with concat.open("w",encoding="utf-8") as f:
-        for slide in slides: f.write(f"file '{slide.resolve()}'\\nduration 8\\n")
-        f.write(f"file '{slides[-1].resolve()}'\\n")
+        for slide in slides: f.write(f"file '{slide.resolve()}'\nduration 8\n")
+        f.write(f"file '{slides[-1].resolve()}'\n")
     silent=WORK/"slides.mp4"
     run(["ffmpeg","-y","-f","concat","-safe","0","-i",str(concat),
          "-vf","scale=1280:720,format=yuv420p","-r","30","-c:v","libx264","-preset","veryfast",str(silent)])
@@ -150,12 +150,12 @@ def upload_to_youtube(video, thumbnail, story, topic):
         scopes=["https://www.googleapis.com/auth/youtube.upload"])
     youtube=build("youtube","v3",credentials=creds)
     credits=json.loads((OUT/"asset_credits.json").read_text(encoding="utf-8"))
-    credit_text="\\n".join(
+    credit_text="\n".join(
         f"{x['file']} — {x['license']} — {x['license_url']} — {x['source_page']}"
         for x in credits
     )
     description=(story["description_ur"]+
-        f"\\n\\nبنیادی حوالہ: {topic['source']}\\n{topic['url']}\\n\\nتصاویر کے لائسنس اور کریڈٹ:\\n{credit_text}")[:4900]
+        f"\n\nبنیادی حوالہ: {topic['source']}\n{topic['url']}\n\nتصاویر کے لائسنس اور کریڈٹ:\n{credit_text}")[:4900]
     body={"snippet":{"title":story["title_ur"][:95],"description":description,
         "tags":[str(x)[:30] for x in story["tags"][:15]],"categoryId":"27","defaultLanguage":"ur"},
         "status":{"privacyStatus":"private","selfDeclaredMadeForKids":False}}
