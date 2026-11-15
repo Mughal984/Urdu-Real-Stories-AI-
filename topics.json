@@ -1,0 +1,66 @@
+[
+  {
+    "category": "islamic",
+    "topic": "Hazrat Yusuf (AS): sabr, imtihan aur maafi",
+    "source": "Quran, Surah Yusuf 12:4-101",
+    "url": "https://quran.com/12",
+    "visual_query": "ancient Egypt landscape Nile river desert architecture",
+    "notes": "Quranic account only. Do not invent names, dialogue, exact dates or details not established by the Quran."
+  },
+  {
+    "category": "islamic",
+    "topic": "Ashab-e-Kahf: iman aur Allah par bharosa",
+    "source": "Quran, Surah Al-Kahf 18:9-26",
+    "url": "https://quran.com/18",
+    "visual_query": "ancient cave rocky mountains sunrise",
+    "notes": "Use Quranic details only; avoid unsupported names, dates and folklore."
+  },
+  {
+    "category": "islamic",
+    "topic": "Hazrat Musa (AS) aur Firon ka waqia",
+    "source": "Quran, Surah Ta-Ha 20 and Al-Qasas 28",
+    "url": "https://quran.com/20",
+    "visual_query": "ancient Egypt desert river historical landscape",
+    "notes": "Use the Quranic account. Do not fabricate dialogue or cinematic scenes."
+  },
+  {
+    "category": "history",
+    "topic": "Salahuddin Ayyubi aur Jerusalem ki fatah",
+    "source": "Encyclopaedia Britannica: Saladin",
+    "url": "https://www.britannica.com/biography/Saladin",
+    "visual_query": "Ayyubid era Jerusalem medieval architecture historical map",
+    "notes": "Separate documented history from popular legends; avoid invented quotes."
+  },
+  {
+    "category": "history",
+    "topic": "Ibn Battuta ka hairat angez safar",
+    "source": "Encyclopaedia Britannica: Ibn Battuta",
+    "url": "https://www.britannica.com/biography/Ibn-Battuta",
+    "visual_query": "medieval travel map North Africa caravan historic ports",
+    "notes": "Use documented itinerary; do not invent diary quotations."
+  },
+  {
+    "category": "history",
+    "topic": "Abdul Sattar Edhi ki khidmat-e-khalq",
+    "source": "Edhi Foundation biography",
+    "url": "https://edhi.org/biography/",
+    "visual_query": "Abdul Sattar Edhi ambulance humanitarian Pakistan",
+    "notes": "Respectful biography; do not invent private conversations or exact quotes."
+  },
+  {
+    "category": "motivation",
+    "topic": "Thomas Edison ki zindagi aur inventions",
+    "source": "Smithsonian: Thomas Edison collections",
+    "url": "https://www.si.edu/spotlight/edison",
+    "visual_query": "Thomas Edison laboratory historical photographs light bulb",
+    "notes": "Avoid the viral false quote about 10000 failures; use verifiable facts."
+  },
+  {
+    "category": "motivation",
+    "topic": "Helen Keller: mushkil halaat mein taleem aur himmat",
+    "source": "American Foundation for the Blind: Helen Keller",
+    "url": "https://www.afb.org/about-afb/history/helen-keller",
+    "visual_query": "Helen Keller historical portrait classroom vintage",
+    "notes": "Use respectful, documented biography; avoid reducing her life to slogans."
+  }
+]
