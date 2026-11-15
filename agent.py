@@ -31,7 +31,7 @@ def research(topic):
         from bs4 import BeautifulSoup
         soup = BeautifulSoup(response.text, "html.parser")
         for node in soup(["script","style","nav","footer","header"]): node.decompose()
-        return re.sub(r"\\s+", " ", soup.get_text(" "))[:12000]
+        return re.sub(r"\s+", " ", soup.get_text(" "))[:12000]
     except Exception as exc:
         log(f"Could not extract reference page: {exc}")
         return topic["notes"]
