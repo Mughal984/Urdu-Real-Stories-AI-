@@ -26,7 +26,7 @@ jobs:
       YOUTUBE_TOKEN_JSON: ${{ secrets.YOUTUBE_TOKEN_JSON }}
       STORY_CATEGORY: ${{ github.event.inputs.category || 'auto' }}
       UPLOAD_TO_YOUTUBE: ${{ (github.event_name == 'schedule' || github.event.inputs.upload == 'true') && 'true' || 'false' }}
-      YOUTUBE_PRIVACY: private
+      YOUTUBE_PRIVACY: public
       URDU_VOICE: ur-PK-AsadNeural
     steps:
       - uses: actions/checkout@v4
