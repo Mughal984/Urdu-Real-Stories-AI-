@@ -36,6 +36,37 @@ def research(topic):
         log(f"Could not extract reference page: {exc}")
         return topic["notes"]
 
+def gemini_generate(prompt, timeout=150):
+    """Retry temporary Gemini API outages without changing the story prompt."""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={KEY}"
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.45, "responseMimeType": "application/json"}
+    }
+    last_error = None
+    for attempt in range(1, 6):
+        try:
+            response = requests.post(url, json=payload, timeout=timeout)
+            if response.status_code in (429, 500, 502, 503, 504):
+                last_error = f"Gemini temporary HTTP {response.status_code}: {response.text[:500]}"
+                log(f"{last_error} (attempt {attempt}/5)")
+                if attempt < 5:
+                    import time
+                    time.sleep(min(15 * (2 ** (attempt - 1)), 120))
+                    continue
+            response.raise_for_status()
+            return response
+        except (requests.Timeout, requests.ConnectionError) as exc:
+            last_error = str(exc)
+            log(f"Gemini connection retry (attempt {attempt}/5): {type(exc).__name__}")
+            if attempt < 5:
+                import time
+                time.sleep(min(15 * (2 ** (attempt - 1)), 120))
+                continue
+            raise
+    raise RuntimeError(f"Gemini remained unavailable after 5 attempts: {last_error}")
+
+
 def write_story(topic, source_text):
     if not KEY: raise RuntimeError("GitHub secret GEMINI_API_KEY is missing.")
     prompt = f"""
@@ -51,12 +82,7 @@ Never invent facts, dates, dialogue, quotes, miracles or hadith. For Islamic top
 VISUAL SCENES: Return 12–15 scenes in chronological order. Each scene must be a short, concrete English photo-search phrase describing a visible real-world subject, place, object or action. Use specific searchable nouns (e.g. ancient Egyptian palace, Nile river, desert caravan, prison stone corridor), not cinematic adjectives, emotions, abstract concepts, captions, book covers, posters or illustrations. Never request an image of a prophet or sacred figure. Do not repeat the same visual subject.
 Return JSON only with: title_ur, narration_ur, scenes, description_ur, tags (up to 15 strings), thumbnail_text_ur. Provide 12–15 distinct visual scenes, evenly covering the full narration from opening to ending.
 """ 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={KEY}"
-    response = requests.post(url, json={
-        "contents":[{"parts":[{"text":prompt}]}],
-        "generationConfig":{"temperature":0.45,"responseMimeType":"application/json"}
-    }, timeout=150)
-    response.raise_for_status()
+    response = gemini_generate(prompt, timeout=150)
     raw = response.json()["candidates"][0]["content"]["parts"][0]["text"]
     data = json.loads(raw[raw.find("{"):raw.rfind("}")+1])
     required = ["title_ur","narration_ur","scenes","description_ur","tags","thumbnail_text_ur"]
@@ -69,11 +95,7 @@ IMPORTANT: Your previous draft was too short. Rewrite it as a complete 850–100
 Explain each Quran-confirmed stage with enough context and thoughtful transitions. Keep all facts strictly within the supplied source and notes. Do not invent dialogue, names, dates, or events.
 Return the same JSON fields and keep 12–15 concise English visual scene descriptions.
 """
-        retry = requests.post(url, json={
-            "contents":[{"parts":[{"text":expand_prompt}]}],
-            "generationConfig":{"temperature":0.35,"responseMimeType":"application/json"}
-        }, timeout=150)
-        retry.raise_for_status()
+        retry = gemini_generate(expand_prompt, timeout=150)
         retry_raw = retry.json()["candidates"][0]["content"]["parts"][0]["text"]
         retry_data = json.loads(retry_raw[retry_raw.find("{"):retry_raw.rfind("}")+1])
         if any(not retry_data.get(k) for k in required):
