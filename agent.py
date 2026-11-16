@@ -289,10 +289,15 @@ def upload_to_youtube(video, thumbnail, story, topic):
         f"{x['file']} — {x['license']} — {x['license_url']} — {x['source_page']}"
         for x in credits
     )
+    keywords = list(dict.fromkeys([str(x).strip() for x in story["tags"] if str(x).strip()]))
+    keyword_text = "، ".join(keywords[:15])
+    hashtags = " ".join("#" + re.sub(r"\s+", "", x) for x in keywords[:5])
     description=(story["description_ur"]+
+        "\n\nاہم SEO Keywords: "+keyword_text+
+        "\n\n"+hashtags+
         f"\n\nبنیادی حوالہ: {topic['source']}\n{topic['url']}\n\nتصاویر کے لائسنس اور کریڈٹ:\n{credit_text}")[:4900]
     body={"snippet":{"title":story["title_ur"][:95],"description":description,
-        "tags":[str(x)[:30] for x in story["tags"][:15]],"categoryId":"27","defaultLanguage":"ur"},
+        "tags":[x[:30] for x in keywords[:15]],"categoryId":"27","defaultLanguage":"ur"},
         "status":{"privacyStatus":"private","selfDeclaredMadeForKids":False}}
     result=youtube.videos().insert(part="snippet,status",body=body,
         media_body=MediaFileUpload(str(video),mimetype="video/mp4",resumable=True)).execute()
