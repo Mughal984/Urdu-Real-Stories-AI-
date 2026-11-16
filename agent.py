@@ -345,8 +345,8 @@ def main():
     (OUT/"story.json").write_text(json.dumps({"topic":topic,"story":story},ensure_ascii=False,indent=2),encoding="utf-8")
     audio=OUT/"voice.mp3"; asyncio.run(make_voice(story["narration_ur"],audio))
     images=find_images(story["scenes"])
-    slides=make_slides(images,story["scenes"],story["title_ur"])
-    video=create_video(slides,audio)
+    slides,durations=make_slides(images,story["scenes"],story["title_ur"],story["narration_ur"],audio)
+    video=create_video(slides,audio,durations)
     thumbnail=create_thumbnail(story["thumbnail_text_ur"], images, story["title_ur"])
     if os.getenv("UPLOAD_TO_YOUTUBE","false").lower()=="true":
         upload_to_youtube(video,thumbnail,story,topic)
