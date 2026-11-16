@@ -193,24 +193,19 @@ def get_latin_font(size):
     return ImageFont.load_default()
 
 def make_slides(images, scenes, title, narration, audio):
-    # Clean documentary visuals: intentionally no on-screen captions or subtitles.
+    # Full-HD documentary frames; no unreliable auto-generated subtitles.
     probe = subprocess.run(["ffprobe","-v","error","-show_entries","format=duration",
         "-of","default=noprint_wrappers=1:nokey=1",str(audio)],
         capture_output=True,text=True,check=True)
     total_seconds = max(1.0,float(probe.stdout.strip()))
-    total_words = max(1,len(narration.split()))
-    weights = [max(1, len(narration.split()) * 1.0 / len(images)) for _ in images]
-    weight_sum = sum(weights)
     slides, durations = [], []
     for i, image_path in enumerate(images):
-        canvas = Image.new("RGB",(1280,720),(20,28,44))
-        bg = ImageOps.fit(Image.open(image_path).convert("RGB"),(1280,720),
-                          method=Image.Resampling.LANCZOS)
-        canvas = bg
         path = WORK/f"slide_{i:02d}.jpg"
-        canvas.save(path,quality=93)
+        frame = ImageOps.fit(Image.open(image_path).convert("RGB"),(1920,1080),
+                             method=Image.Resampling.LANCZOS)
+        frame.save(path,quality=95)
         slides.append(path)
-        durations.append(total_seconds*weights[i]/weight_sum)
+        durations.append(total_seconds / max(1,len(images)))
     return slides, durations
 
 def create_thumbnail(text, images=None, title=""):
@@ -257,17 +252,27 @@ def create_thumbnail(text, images=None, title=""):
     return path
 
 def create_video(slides, audio, durations):
-    concat=WORK/"slides.txt"
+    # Gentle Ken Burns zoom on every image, rendered at 1080p/30fps.
+    fps = 30
+    clips = []
+    for i, (slide, duration) in enumerate(zip(slides, durations)):
+        clip = WORK/f"motion_{i:02d}.mp4"
+        frames = max(2, int(round(duration*fps)))
+        vf = "zoompan=z='min(zoom+0.00045,1.075)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=" + str(frames) + ":s=1920x1080:fps=30,format=yuv420p"
+        run(["ffmpeg","-y","-loop","1","-i",str(slide),"-vf",vf,
+             "-frames:v",str(frames),"-an","-c:v","libx264","-preset","veryfast",
+             "-pix_fmt","yuv420p",str(clip)])
+        clips.append(clip)
+    concat = WORK/"motion_clips.txt"
     with concat.open("w",encoding="utf-8") as f:
-        for slide,duration in zip(slides,durations):
-            f.write(f"file '{slide.resolve()}'\nduration {max(1.0,duration):.3f}\n")
-        f.write(f"file '{slides[-1].resolve()}'\n")
-    silent=WORK/"slides.mp4"
+        for clip in clips:
+            f.write("file '" + str(clip.resolve()) + "'\n")
+    silent = WORK/"motion_video.mp4"
     run(["ffmpeg","-y","-f","concat","-safe","0","-i",str(concat),
-         "-vf","scale=1280:720,format=yuv420p","-r","30","-c:v","libx264","-preset","veryfast",str(silent)])
-    final=OUT/"urdu_story.mp4"
+         "-c","copy",str(silent)])
+    final = OUT/"urdu_story.mp4"
     run(["ffmpeg","-y","-i",str(silent),"-i",str(audio),"-shortest",
-         "-c:v","libx264","-preset","veryfast","-c:a","aac","-b:a","192k","-movflags","+faststart",str(final)])
+         "-c:v","copy","-c:a","aac","-b:a","192k","-movflags","+faststart",str(final)])
     return final
 
 def upload_to_youtube(video, thumbnail, story, topic):
