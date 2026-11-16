@@ -191,24 +191,69 @@ def get_latin_font(size):
         if Path(p).exists(): return ImageFont.truetype(p,size)
     return ImageFont.load_default()
 
-def make_slides(images, scenes, title):
-    slides=[]
-    for i in range(max(8,len(scenes))):
-        canvas=Image.new("RGB",(1280,720),(20,28,44))
-        if i < len(images):
-            try:
-                bg=ImageOps.fit(Image.open(images[i]).convert("RGB"),(1280,720))
-                shade=Image.new("RGBA",bg.size,(0,0,0,100))
-                canvas=Image.alpha_composite(bg.convert("RGBA"),shade).convert("RGB")
-            except Exception: pass
+def make_slides(images, scenes, title, narration, audio):
+    # Build Urdu subtitle segments from the actual narration and time them to audio length.
+    probe = subprocess.run(["ffprobe","-v","error","-show_entries","format=duration",
+        "-of","default=noprint_wrappers=1:nokey=1",str(audio)],
+        capture_output=True,text=True,check=True)
+    total_seconds = max(1.0,float(probe.stdout.strip()))
+    sentences = [x.strip() for x in re.split(r'(?<=[۔؟!])\s*', narration) if x.strip()]
+    if not sentences:
+        sentences = [narration]
+    groups = [[] for _ in range(len(images))]
+    total_words = max(1,len(narration.split()))
+    targets = [total_words*(i+1)/len(images) for i in range(len(images))]
+    current, count, idx = 0, 0, 0
+    for sentence in sentences:
+        groups[idx].append(sentence)
+        count += len(sentence.split())
+        if idx < len(images)-1 and count >= targets[idx]:
+            idx += 1
+    slides, durations = [], []
+    try:
+        import arabic_reshaper
+        from bidi.algorithm import get_display
+        def rtl(value): return get_display(arabic_reshaper.reshape(value))
+    except Exception:
+        def rtl(value): return value
+    weights = [max(1,len(" ".join(g).split())) for g in groups]
+    weight_sum = sum(weights)
+    for i, image_path in enumerate(images):
+        canvas = Image.new("RGB",(1280,720),(20,28,44))
+        try:
+            bg=ImageOps.fit(Image.open(image_path).convert("RGB"),(1280,720))
+            shade=Image.new("RGBA",bg.size,(0,0,0,95))
+            canvas=Image.alpha_composite(bg.convert("RGBA"),shade).convert("RGB")
+        except Exception as exc:
+            log(f"Scene background fallback {i+1}: {type(exc).__name__}")
         draw=ImageDraw.Draw(canvas)
-        draw.rectangle((0,560,1280,720),fill=(0,0,0))
-        caption = scenes[i] if i < len(scenes) else "Story scene"
-        draw.text((55,585),f"SCENE {i+1}",font=get_latin_font(22),fill=(244,194,91))
-        draw.multiline_text((55,620),"\n".join([caption[j:j+72] for j in range(0,min(len(caption),144),72)]),
-                            font=get_latin_font(25),fill="white",spacing=8)
-        path=WORK/f"slide_{i:02d}.jpg"; canvas.save(path,quality=91); slides.append(path)
-    return slides
+        draw.rectangle((0,535,1280,720),fill=(0,0,0,185))
+        subtitle = " ".join(groups[i])
+        # Keep subtitles readable and right-to-left; wrap by words, not arbitrary characters.
+        words = subtitle.split()
+        lines, line = [], ""
+        for word in words:
+            trial = (line + " " + word).strip()
+            if len(trial) > 58 and line:
+                lines.append(line); line = word
+            else:
+                line = trial
+        if line: lines.append(line)
+        lines = lines[:4]
+        font = get_font(34)
+        y = 555 if len(lines) <= 3 else 540
+        for line in lines:
+            try:
+                draw.text((1215,y),rtl(line),font=font,fill="white",anchor="rt",
+                          direction="rtl",language="ur",stroke_width=1,stroke_fill=(0,0,0))
+            except (TypeError,ValueError):
+                draw.text((1215,y),rtl(line),font=font,fill="white",anchor="rt",
+                          stroke_width=1,stroke_fill=(0,0,0))
+            y += 42
+        path=WORK/f"slide_{i:02d}.jpg"
+        canvas.save(path,quality=92); slides.append(path)
+        durations.append(total_seconds*weights[i]/weight_sum)
+    return slides, durations
 
 def create_thumbnail(text, images=None, title=""):
     # Use the first real scene photo as the thumbnail background, never a plain text card.
@@ -253,16 +298,17 @@ def create_thumbnail(text, images=None, title=""):
     im.save(path,quality=95)
     return path
 
-def create_video(slides, audio):
+def create_video(slides, audio, durations):
     concat=WORK/"slides.txt"
     with concat.open("w",encoding="utf-8") as f:
-        for slide in slides: f.write(f"file '{slide.resolve()}'\nduration 8\n")
+        for slide,duration in zip(slides,durations):
+            f.write(f"file '{slide.resolve()}'\nduration {max(1.0,duration):.3f}\n")
         f.write(f"file '{slides[-1].resolve()}'\n")
     silent=WORK/"slides.mp4"
     run(["ffmpeg","-y","-f","concat","-safe","0","-i",str(concat),
          "-vf","scale=1280:720,format=yuv420p","-r","30","-c:v","libx264","-preset","veryfast",str(silent)])
     final=OUT/"urdu_story.mp4"
-    run(["ffmpeg","-y","-stream_loop","-1","-i",str(silent),"-i",str(audio),"-shortest",
+    run(["ffmpeg","-y","-i",str(silent),"-i",str(audio),"-shortest",
          "-c:v","libx264","-preset","veryfast","-c:a","aac","-b:a","192k","-movflags","+faststart",str(final)])
     return final
 
