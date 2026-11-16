@@ -175,7 +175,7 @@ def find_images(scene_queries):
     usable = [x for x in scene_assets if x is not None]
     log(f"Downloaded {len(usable)} unique images for {len(scene_queries[:15])} scenes.")
     # Do not silently repeat an unrelated photo across the whole video.
-    if len(usable) < min(6, len(scene_queries[:10])):
+    if len(usable) < min(10, len(scene_queries[:15])):
         raise RuntimeError(f"Photo search temporarily returned only {len(usable)} unique images. No repeated-photo video was created; retry is safe.")
     # Keep only successfully downloaded unique photos; never render blank slides.
     return usable
