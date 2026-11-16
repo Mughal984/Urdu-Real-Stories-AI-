@@ -49,7 +49,7 @@ Source extract: {source_text[:10000]}
 Create a compelling 5–7 minute spoken script of 850–1000 Urdu words. Use a strong hook, chronological narrative, context, transitions, reflective lessons and memorable ending. Stay strictly within supplied source evidence; never invent events or dialogue.
 Never invent facts, dates, dialogue, quotes, miracles or hadith. For Islamic topics do not visually depict prophets or sacred figures; use landscapes, architecture, objects and historically appropriate environments instead. For biographies, distinguish documented facts from uncertainty.
 VISUAL SCENES: Return 8–10 scenes in chronological order. Each scene must be a short, concrete English photo-search phrase describing a visible real-world subject, place, object or action. Use specific searchable nouns (e.g. ancient Egyptian palace, Nile river, desert caravan, prison stone corridor), not cinematic adjectives, emotions, abstract concepts, captions, book covers, posters or illustrations. Never request an image of a prophet or sacred figure. Do not repeat the same visual subject.
-Return JSON only with: title_ur, narration_ur, scenes, description_ur, tags (up to 15 strings), thumbnail_text_ur.
+Return JSON only with: title_ur, narration_ur, scenes, description_ur, tags (up to 15 strings), thumbnail_text_ur. Provide 12–15 distinct visual scenes, evenly covering the full narration from opening to ending.
 """ 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={KEY}"
     response = requests.post(url, json={
@@ -93,7 +93,7 @@ def find_images(scene_queries):
     scene_assets, credits, used_titles = [], [], set()
     blocked = ("book cover", "title page", "poster", "map", "logo", "coat of arms",
                "manuscript", "document", "pdf", "book front", "flag icon")
-    for i, query in enumerate(scene_queries[:10]):
+    for i, query in enumerate(scene_queries[:15]):
         target = WORK / f"scene_{i:02d}.jpg"
         chosen = None
         words = re.findall(r"[a-zA-Z]{3,}", query.lower())
@@ -173,7 +173,7 @@ def find_images(scene_queries):
         scene_assets.append(chosen)
     (OUT/"asset_credits.json").write_text(json.dumps(credits,ensure_ascii=False,indent=2),encoding="utf-8")
     usable = [x for x in scene_assets if x is not None]
-    log(f"Downloaded {len(usable)} unique images for {len(scene_queries[:10])} scenes.")
+    log(f"Downloaded {len(usable)} unique images for {len(scene_queries[:15])} scenes.")
     # Do not silently repeat an unrelated photo across the whole video.
     if len(usable) < min(6, len(scene_queries[:10])):
         raise RuntimeError(f"Photo search temporarily returned only {len(usable)} unique images. No repeated-photo video was created; retry is safe.")
