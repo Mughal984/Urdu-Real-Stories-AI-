@@ -298,7 +298,7 @@ def upload_to_youtube(video, thumbnail, story, topic):
         f"\n\nبنیادی حوالہ: {topic['source']}\n{topic['url']}\n\nتصاویر کے لائسنس اور کریڈٹ:\n{credit_text}")[:4900]
     body={"snippet":{"title":story["title_ur"][:95],"description":description,
         "tags":[x[:30] for x in keywords[:15]],"categoryId":"27","defaultLanguage":"ur"},
-        "status":{"privacyStatus":"private","selfDeclaredMadeForKids":False}}
+        "status":{"privacyStatus":os.getenv("YOUTUBE_PRIVACY","public").lower(),"selfDeclaredMadeForKids":False}}
     result=youtube.videos().insert(part="snippet,status",body=body,
         media_body=MediaFileUpload(str(video),mimetype="video/mp4",resumable=True)).execute()
     youtube.thumbnails().set(videoId=result["id"],
