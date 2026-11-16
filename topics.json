@@ -62,5 +62,181 @@
     "url": "https://www.afb.org/about-afb/history/helen-keller",
     "visual_query": "Helen Keller historical portrait classroom vintage",
     "notes": "Use respectful, documented biography; avoid reducing her life to slogans."
+  },
+  {
+    "category": "islamic",
+    "topic": "Hazrat Nuh (AS): dawat, sabr aur kashti ka waqia",
+    "source": "Quran, Surah Hud 11:25-49 and Surah Nuh 71",
+    "url": "https://quran.com/71",
+    "visual_query": "ancient wooden boat storm sea mountain landscape",
+    "notes": "Use Quranic account only. Do not invent the Ark's dimensions, exact dates, dialogue or unsupported details."
+  },
+  {
+    "category": "islamic",
+    "topic": "Hazrat Ibrahim (AS): tawheed aur Allah par yaqeen",
+    "source": "Quran, Surah Al-Anbiya 21 and Surah As-Saffat 37",
+    "url": "https://quran.com/21",
+    "visual_query": "ancient Mesopotamian desert ruins stone architecture",
+    "notes": "Use Quran-confirmed events only. Do not visually depict prophets or invent dialogue and dates."
+  },
+  {
+    "category": "islamic",
+    "topic": "Hazrat Yunus (AS): andheron mein dua aur umeed",
+    "source": "Quran, Surah Al-Anbiya 21:87-88 and Surah As-Saffat 37:139-148",
+    "url": "https://quran.com/21/87",
+    "visual_query": "deep ocean waves fishing boat ancient coastal town",
+    "notes": "Use Quranic details only. Do not invent the type of sea creature, exact location or dialogue."
+  },
+  {
+    "category": "islamic",
+    "topic": "Hazrat Maryam (AS): paakizgi, imtihan aur Allah ki rehmat",
+    "source": "Quran, Surah Maryam 19 and Aal-e-Imran 3:35-47",
+    "url": "https://quran.com/19",
+    "visual_query": "ancient Jerusalem stone courtyard date palm desert landscape",
+    "notes": "Respectful Quran-based account. Never depict Maryam or Isa (AS); use settings and objects only. Do not invent dialogue."
+  },
+  {
+    "category": "islamic",
+    "topic": "Hazrat Sulayman (AS) aur Malika-e-Saba ka waqia",
+    "source": "Quran, Surah An-Naml 27:15-44",
+    "url": "https://quran.com/27",
+    "visual_query": "ancient Yemen Marib dam Saba kingdom palace ruins",
+    "notes": "Use Quranic account only. Do not invent names, dialogue, exact dates or visual depictions of prophets."
+  },
+  {
+    "category": "islamic",
+    "topic": "Zulqarnain: insaf aur Yajooj Majooj ki deewar",
+    "source": "Quran, Surah Al-Kahf 18:83-98",
+    "url": "https://quran.com/18/83",
+    "visual_query": "ancient mountain pass iron copper fortified stone wall",
+    "notes": "Use Quranic account only. Do not claim a certain historical identity for Dhul-Qarnayn or invent locations and dates."
+  },
+  {
+    "category": "islamic",
+    "topic": "Qaroon: daulat ka ghuroor aur anjaam",
+    "source": "Quran, Surah Al-Qasas 28:76-82",
+    "url": "https://quran.com/28/76",
+    "visual_query": "ancient Egypt archaeological treasure chamber desert ruins",
+    "notes": "Use Quranic details only. Do not invent treasure amounts, dialogue, dates or unsupported descriptions."
+  },
+  {
+    "category": "history",
+    "topic": "Ibn Sina: ilm, tib aur Al-Qanun fi al-Tibb",
+    "source": "Encyclopaedia Britannica: Avicenna",
+    "url": "https://www.britannica.com/biography/Avicenna",
+    "visual_query": "Avicenna medieval Persian physician manuscript medical instruments",
+    "notes": "Use documented biography and scholarly achievements. Avoid invented quotations and exaggerated claims."
+  },
+  {
+    "category": "history",
+    "topic": "Al-Khwarizmi: algebra ki bunyaad aur ilm ki duniya",
+    "source": "Encyclopaedia Britannica: al-Khwarizmi",
+    "url": "https://www.britannica.com/biography/al-Khwarizmi",
+    "visual_query": "medieval Baghdad House of Wisdom mathematics astronomy manuscripts",
+    "notes": "Explain his documented mathematical contributions accurately; avoid claiming he invented all modern mathematics."
+  },
+  {
+    "category": "history",
+    "topic": "Mansa Musa: Mali saltanat aur tareekhi safar",
+    "source": "Encyclopaedia Britannica: Mansa Musa",
+    "url": "https://www.britannica.com/biography/Mansa-Musa",
+    "visual_query": "medieval Mali Timbuktu Sankore mosque trans-Saharan caravan",
+    "notes": "Use documented history; treat wealth estimates and stories about his pilgrimage cautiously."
+  },
+  {
+    "category": "history",
+    "topic": "Noor Inayat Khan: doosri jang-e-azeem ki bahadur khatoon",
+    "source": "Encyclopaedia Britannica: Noor Inayat Khan",
+    "url": "https://www.britannica.com/biography/Noor-Inayat-Khan",
+    "visual_query": "Noor Inayat Khan wartime SOE historical photograph Paris World War II",
+    "notes": "Use documented wartime biography. Do not invent secret missions, conversations or quotations."
+  },
+  {
+    "category": "history",
+    "topic": "Tipu Sultan: Mysore ki saltanat aur angrezon se muqabla",
+    "source": "Encyclopaedia Britannica: Tipu Sultan",
+    "url": "https://www.britannica.com/biography/Tipu-Sultan",
+    "visual_query": "Tipu Sultan Srirangapatna Mysore palace historical fort",
+    "notes": "Present contested historical interpretations fairly and rely on documented events."
+  },
+  {
+    "category": "history",
+    "topic": "Rani Lakshmibai: 1857 ki jang-e-azadi ki nishani",
+    "source": "Encyclopaedia Britannica: Lakshmi Bai",
+    "url": "https://www.britannica.com/biography/Lakshmi-Bai",
+    "visual_query": "Jhansi fort Rani Lakshmibai historical 1857 India",
+    "notes": "Use documented history; separate later legends from established facts and avoid invented dialogue."
+  },
+  {
+    "category": "history",
+    "topic": "Al-Biruni: science, astronomy aur Hindustan ka mutalea",
+    "source": "Encyclopaedia Britannica: al-Biruni",
+    "url": "https://www.britannica.com/biography/al-Biruni",
+    "visual_query": "Al Biruni medieval astronomy astrolabe manuscript observatory",
+    "notes": "Use verifiable scholarly achievements and historical context; avoid unsupported claims."
+  },
+  {
+    "category": "motivation",
+    "topic": "Marie Curie: science ke liye mehnat aur sabr",
+    "source": "Nobel Prize: Marie Curie biography",
+    "url": "https://www.nobelprize.org/prizes/physics/1903/marie-curie/biographical/",
+    "visual_query": "Marie Curie laboratory historical photograph radium research",
+    "notes": "Use documented life and scientific work; avoid romanticized or invented anecdotes."
+  },
+  {
+    "category": "motivation",
+    "topic": "Louis Braille: mushkil ko ilm ki taqat banana",
+    "source": "American Foundation for the Blind: Louis Braille",
+    "url": "https://www.afb.org/about-afb/history/louis-braille",
+    "visual_query": "Louis Braille portrait braille alphabet embossed books historic school",
+    "notes": "Respectful, documented biography. Explain Braille system accurately and avoid invented quotes."
+  },
+  {
+    "category": "motivation",
+    "topic": "Stephen Hawking: ilm, hausla aur kainaat ke raaz",
+    "source": "University of Cambridge: Stephen Hawking",
+    "url": "https://www.hawking.org.uk/biography",
+    "visual_query": "Stephen Hawking Cambridge office wheelchair cosmology blackboard",
+    "notes": "Respect disability and avoid portraying his life as a simplistic medical miracle. Use documented science and biography."
+  },
+  {
+    "category": "motivation",
+    "topic": "Malala Yousafzai: taleem ke haq ke liye awaaz",
+    "source": "Nobel Prize: Malala Yousafzai",
+    "url": "https://www.nobelprize.org/prizes/peace/2014/yousafzai/biographical/",
+    "visual_query": "Malala Yousafzai education campaign school books Nobel Peace Prize",
+    "notes": "Use verified biography and her public advocacy. Do not invent private thoughts or dialogue."
+  },
+  {
+    "category": "motivation",
+    "topic": "Wright Brothers: koshish se parwaz tak",
+    "source": "Smithsonian National Air and Space Museum: Wright brothers",
+    "url": "https://airandspace.si.edu/explore/stories/wright-brothers",
+    "visual_query": "Wright brothers 1903 Flyer Kitty Hawk first powered flight",
+    "notes": "Use documented experiments and milestones; avoid unsupported claims about exact numbers of failures."
+  },
+  {
+    "category": "motivation",
+    "topic": "Katherine Johnson: hisaab se space tak ka safar",
+    "source": "NASA: Katherine Johnson",
+    "url": "https://www.nasa.gov/people/katherine-johnson/",
+    "visual_query": "Katherine Johnson NASA mathematician Mercury Apollo mission control",
+    "notes": "Use NASA-documented biography and mathematical contributions; do not invent conversations."
+  },
+  {
+    "category": "motivation",
+    "topic": "Abraham Lincoln: nakaamiyon ke baad leadership",
+    "source": "Encyclopaedia Britannica: Abraham Lincoln",
+    "url": "https://www.britannica.com/biography/Abraham-Lincoln",
+    "visual_query": "Abraham Lincoln historical portrait Illinois law office White House",
+    "notes": "Use documented biography; avoid viral fabricated quotes and oversimplified claims about failures."
+  },
+  {
+    "category": "motivation",
+    "topic": "Nick Vujicic: zindagi, umeed aur himmat ka paigham",
+    "source": "Life Without Limbs: Nick Vujicic biography",
+    "url": "https://lifewithoutlimbs.org/about/nick-vujicic/",
+    "visual_query": "Nick Vujicic public speaking motivational event audience",
+    "notes": "Use his published biography and public work. Avoid medical speculation, invented personal dialogue or reducing disability to inspiration."
   }
 ]
