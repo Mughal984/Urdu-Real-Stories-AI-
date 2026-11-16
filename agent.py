@@ -89,57 +89,72 @@ async def make_voice(text, path):
     await edge_tts.Communicate(text, VOICE, rate="-3%", pitch="-1Hz").save(str(path))
 
 def find_images(scene_queries):
-    # Keep one slot per scene: a failed search must never shift later photos
-    # into the wrong scene.
-    scene_assets, credits = [], []
+    # Search multiple variations and never reuse one photo for another scene.
+    scene_assets, credits, used_titles = [], [], set()
     blocked = ("book cover", "title page", "poster", "map", "logo", "coat of arms",
-               "manuscript", "document", "pdf", "book front")
+               "manuscript", "document", "pdf", "book front", "flag icon")
     for i, query in enumerate(scene_queries[:10]):
         target = WORK / f"scene_{i:02d}.jpg"
         chosen = None
-        queries = [query]
         words = re.findall(r"[a-zA-Z]{3,}", query.lower())
         stop = {"cinematic","volumetric","light","shining","down","into","dark","dramatic",
                 "beautiful","majestic","ancient","interior","exterior","wide","shot","view",
                 "scene","with","from","under","over","near","the","and","for","that","this",
                 "soft","golden","warm","symbolizing","symbolic","profound","clear","sky"}
         meaningful = [w for w in words if w not in stop]
-        fallback = " ".join(meaningful[:5])
-        if fallback and fallback.lower() != query.lower():
-            queries.append(fallback)
-        for search_query in queries:
+        variations = [query, " ".join(meaningful[:5])]
+        if meaningful:
+            variations += [" ".join(meaningful[:3]) + " photograph",
+                           " ".join(meaningful[:4]) + " historical site"]
+        seen_queries = set()
+        for search_query in variations:
+            search_query = search_query.strip()
+            if not search_query or search_query.lower() in seen_queries:
+                continue
+            seen_queries.add(search_query.lower())
             try:
                 params = {"action":"query","format":"json","generator":"search",
-                          "gsrsearch":search_query,"gsrnamespace":6,"gsrlimit":30,
+                          "gsrsearch":search_query,"gsrnamespace":6,"gsrlimit":50,
                           "prop":"imageinfo","iiprop":"url|extmetadata|mime|size",
                           "iiurlwidth":1280}
                 response = requests.get("https://commons.wikimedia.org/w/api.php",
-                    params=params, timeout=30, headers={"User-Agent":"UrduRealStoriesAI/1.0"})
+                    params=params, timeout=25, headers={"User-Agent":"UrduRealStoriesAI/1.0 (story video generator)"})
                 response.raise_for_status()
                 pages = list(response.json().get("query",{}).get("pages",{}).values())
+                # Prefer distinct files and real photographs over diagrams/artwork.
+                pages.sort(key=lambda p: (
+                    any(x in p.get("title","").lower() for x in ("photograph","photo")),
+                    p.get("imageinfo",[{}])[0].get("width",0)
+                ), reverse=True)
                 for page in pages:
-                    title = page.get("title","").lower()
-                    if any(term in title for term in blocked):
+                    title = page.get("title","")
+                    title_l = title.lower()
+                    if title in used_titles or any(term in title_l for term in blocked):
                         continue
                     info = (page.get("imageinfo") or [{}])[0]
                     if info.get("mime") not in ("image/jpeg","image/png","image/webp"):
                         continue
-                    if info.get("width",0) < 500 or info.get("height",0) < 300:
+                    if info.get("width",0) < 600 or info.get("height",0) < 350:
                         continue
                     image_url = info.get("thumburl") or info.get("url")
                     if not image_url:
                         continue
-                    res = requests.get(image_url, timeout=35,
+                    res = requests.get(image_url, timeout=25,
                         headers={"User-Agent":"UrduRealStoriesAI/1.0"})
                     if not res.ok or not res.headers.get("content-type","").startswith("image/"):
                         continue
+                    from io import BytesIO
+                    try:
+                        check = Image.open(BytesIO(res.content))
+                        check.verify()
+                    except Exception:
+                        continue
                     target.write_bytes(res.content)
+                    used_titles.add(title)
                     meta = info.get("extmetadata",{})
                     credits.append({
-                        "file": page.get("title",""),
-                        "scene": i + 1,
-                        "search_query": search_query,
-                        "source_page": "https://commons.wikimedia.org/wiki/" + page.get("title","").replace(" ","_"),
+                        "file": title, "scene": i + 1, "search_query": search_query,
+                        "source_page": "https://commons.wikimedia.org/wiki/" + title.replace(" ","_"),
                         "artist": meta.get("Artist",{}).get("value","")[:500],
                         "license": meta.get("LicenseShortName",{}).get("value",""),
                         "license_url": meta.get("LicenseUrl",{}).get("value",""),
@@ -150,24 +165,19 @@ def find_images(scene_queries):
                 if chosen:
                     break
             except Exception as exc:
-                log(f"Image search for scene {i+1} failed: {exc}")
+                log(f"Image source retry for scene {i+1}: {type(exc).__name__}")
         if chosen:
-            log(f"Scene {i+1}: image found for {query[:90]}")
+            log(f"Scene {i+1}: unique photo selected.")
         else:
-            log(f"Scene {i+1}: no matching image; will use nearest available scene image")
+            log(f"Scene {i+1}: no unique photo found after retries.")
         scene_assets.append(chosen)
     (OUT/"asset_credits.json").write_text(json.dumps(credits,ensure_ascii=False,indent=2),encoding="utf-8")
     usable = [x for x in scene_assets if x is not None]
-    log(f"Downloaded {len(usable)} usable images for {len(scene_queries[:10])} scenes.")
-    if not usable:
-        raise RuntimeError("No usable story images were found. Video creation stopped.")
-    # Fill missing scene slots from the nearest available image to prevent blank openings/slides.
-    for i, asset in enumerate(scene_assets):
-        if asset is None:
-            nearest = min((j for j, x in enumerate(scene_assets) if x is not None), key=lambda j: abs(j-i))
-            scene_assets[i] = scene_assets[nearest]
+    log(f"Downloaded {len(usable)} unique images for {len(scene_queries[:10])} scenes.")
+    # Do not silently repeat an unrelated photo across the whole video.
+    if len(usable) < min(6, len(scene_queries[:10])):
+        raise RuntimeError(f"Only {len(usable)} unique relevant photos found; need at least 6. Retry the workflow later.")
     return scene_assets
-
 
 def get_font(size):
     for p in ["/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
