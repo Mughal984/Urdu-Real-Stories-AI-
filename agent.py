@@ -46,7 +46,7 @@ Category: {topic['category']}
 Source: {topic['source']} — {topic['url']}
 Fact limits: {topic['notes']}
 Source extract: {source_text[:10000]}
-Create a compelling 5–7 minute script (roughly 600–800 Urdu words), a strong hook, chronological/coherent narrative and memorable ending.
+Create a compelling 5–7 minute spoken script of 850–1000 Urdu words. This word count is mandatory: do not return a short summary. Use a strong hook, detailed chronological narrative, clear transitions, context for each major event, reflective lessons, and a memorable ending. Keep every detail within the supplied Quranic/source evidence; never pad with invented scenes or dialogue.
 Never invent facts, dates, dialogue, quotes, miracles or hadith. For Islamic topics use the Quran reference named by the topic; do not attribute unsupported narrations to the Prophet (PBUH). Do not visually depict prophets or sacred figures. For historical biographies, distinguish documented facts from uncertainty.
 Return JSON only with: title_ur, narration_ur, scenes (8 to 10 concise English image search descriptions), description_ur, tags (up to 15 strings), thumbnail_text_ur.
 """
@@ -60,6 +60,28 @@ Return JSON only with: title_ur, narration_ur, scenes (8 to 10 concise English i
     data = json.loads(raw[raw.find("{"):raw.rfind("}")+1])
     required = ["title_ur","narration_ur","scenes","description_ur","tags","thumbnail_text_ur"]
     if any(not data.get(k) for k in required): raise ValueError("Gemini response is missing required fields.")
+    word_count = len(data["narration_ur"].split())
+    if word_count < 800:
+        log(f"Story too short ({word_count} words); requesting a full-length rewrite.")
+        expand_prompt = prompt + """
+IMPORTANT: Your previous draft was too short. Rewrite it as a complete 850–1000 Urdu-word narration, not a summary.
+Explain each Quran-confirmed stage with enough context and thoughtful transitions. Keep all facts strictly within the supplied source and notes. Do not invent dialogue, names, dates, or events.
+Return the same JSON fields and keep 8–10 concise English visual scene descriptions.
+"""
+        retry = requests.post(url, json={
+            "contents":[{"parts":[{"text":expand_prompt}]}],
+            "generationConfig":{"temperature":0.35,"responseMimeType":"application/json"}
+        }, timeout=150)
+        retry.raise_for_status()
+        retry_raw = retry.json()["candidates"][0]["content"]["parts"][0]["text"]
+        retry_data = json.loads(retry_raw[retry_raw.find("{"):retry_raw.rfind("}")+1])
+        if any(not retry_data.get(k) for k in required):
+            raise ValueError("Gemini full-length rewrite is missing required fields.")
+        retry_words = len(retry_data["narration_ur"].split())
+        if retry_words < 800:
+            raise ValueError(f"Generated narration is only {retry_words} words; minimum is 800. Stopping to avoid a short video.")
+        data = retry_data
+    log(f"Final narration length: {len(data['narration_ur'].split())} words.")
     return data
 
 async def make_voice(text, path):
