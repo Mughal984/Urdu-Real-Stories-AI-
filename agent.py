@@ -88,48 +88,85 @@ async def make_voice(text, path):
     await edge_tts.Communicate(text, VOICE, rate="-3%", pitch="-1Hz").save(str(path))
 
 def find_images(scene_queries):
-    assets, credits = [], []
+    # Keep one slot per scene: a failed search must never shift later photos
+    # into the wrong scene.
+    scene_assets, credits = [], []
+    blocked = ("book cover", "title page", "poster", "map", "logo", "coat of arms",
+               "manuscript", "document", "pdf", "book front")
     for i, query in enumerate(scene_queries[:10]):
-        try:
-            params = {"action":"query","format":"json","generator":"search","gsrsearch":query,
-                      "gsrnamespace":6,"gsrlimit":20,"prop":"imageinfo","iiprop":"url|extmetadata","iiurlwidth":1280}
-            response = requests.get("https://commons.wikimedia.org/w/api.php", params=params, timeout=30,
-                                    headers={"User-Agent":"UrduRealStoriesAI/1.0"})
-            response.raise_for_status()
-            data = response.json()
-            pages = list(data.get("query",{}).get("pages",{}).values())
-            if not pages:
-                short_query = " ".join(query.split()[:3])
-                params["gsrsearch"] = short_query
-                response = requests.get("https://commons.wikimedia.org/w/api.php", params=params, timeout=30,
-                                         headers={"User-Agent":"UrduRealStoriesAI/1.0"})
+        target = WORK / f"scene_{i:02d}.jpg"
+        chosen = None
+        queries = [query]
+        words = re.findall(r"[a-zA-Z]{3,}", query.lower())
+        stop = {"cinematic","volumetric","light","shining","down","into","dark","dramatic",
+                "beautiful","majestic","ancient","interior","exterior","wide","shot","view",
+                "scene","with","from","under","over","near","the","and","for","that","this",
+                "soft","golden","warm","symbolizing","symbolic","profound","clear","sky"}
+        meaningful = [w for w in words if w not in stop]
+        fallback = " ".join(meaningful[:5])
+        if fallback and fallback.lower() != query.lower():
+            queries.append(fallback)
+        for search_query in queries:
+            try:
+                params = {"action":"query","format":"json","generator":"search",
+                          "gsrsearch":search_query,"gsrnamespace":6,"gsrlimit":30,
+                          "prop":"imageinfo","iiprop":"url|extmetadata|mime|size",
+                          "iiurlwidth":1280}
+                response = requests.get("https://commons.wikimedia.org/w/api.php",
+                    params=params, timeout=30, headers={"User-Agent":"UrduRealStoriesAI/1.0"})
                 response.raise_for_status()
                 pages = list(response.json().get("query",{}).get("pages",{}).values())
-            random.shuffle(pages)
-            for page in pages:
-                info = (page.get("imageinfo") or [{}])[0]
-                image_url = info.get("thumburl") or info.get("url")
-                if not image_url: continue
-                target = WORK / f"scene_{i:02d}.jpg"
-                res = requests.get(image_url, timeout=35, headers={"User-Agent":"UrduRealStoriesAI/1.0"})
-                if res.ok and res.headers.get("content-type","").startswith("image/"):
+                for page in pages:
+                    title = page.get("title","").lower()
+                    if any(term in title for term in blocked):
+                        continue
+                    info = (page.get("imageinfo") or [{}])[0]
+                    if info.get("mime") not in ("image/jpeg","image/png","image/webp"):
+                        continue
+                    if info.get("width",0) < 500 or info.get("height",0) < 300:
+                        continue
+                    image_url = info.get("thumburl") or info.get("url")
+                    if not image_url:
+                        continue
+                    res = requests.get(image_url, timeout=35,
+                        headers={"User-Agent":"UrduRealStoriesAI/1.0"})
+                    if not res.ok or not res.headers.get("content-type","").startswith("image/"):
+                        continue
                     target.write_bytes(res.content)
                     meta = info.get("extmetadata",{})
                     credits.append({
                         "file": page.get("title",""),
+                        "scene": i + 1,
+                        "search_query": search_query,
                         "source_page": "https://commons.wikimedia.org/wiki/" + page.get("title","").replace(" ","_"),
-                        "artist": (meta.get("Artist",{}).get("value","")[:500]),
-                        "license": (meta.get("LicenseShortName",{}).get("value","")),
-                        "license_url": (meta.get("LicenseUrl",{}).get("value","")),
-                        "credit_line": (meta.get("Credit",{}).get("value","")[:500])
+                        "artist": meta.get("Artist",{}).get("value","")[:500],
+                        "license": meta.get("LicenseShortName",{}).get("value",""),
+                        "license_url": meta.get("LicenseUrl",{}).get("value",""),
+                        "credit_line": meta.get("Credit",{}).get("value","")[:500]
                     })
-                    assets.append(target); break
-        except Exception as exc: log(f"Image search for scene {i} failed: {exc}")
+                    chosen = target
+                    break
+                if chosen:
+                    break
+            except Exception as exc:
+                log(f"Image search for scene {i+1} failed: {exc}")
+        if chosen:
+            log(f"Scene {i+1}: image found for {query[:90]}")
+        else:
+            log(f"Scene {i+1}: no matching image; will use nearest available scene image")
+        scene_assets.append(chosen)
     (OUT/"asset_credits.json").write_text(json.dumps(credits,ensure_ascii=False,indent=2),encoding="utf-8")
-    log(f"Downloaded {len(assets)} usable Wikimedia images.")
-    if not assets:
-        raise RuntimeError("No usable story images were found. Video creation stopped instead of producing blank slides.")
-    return assets
+    usable = [x for x in scene_assets if x is not None]
+    log(f"Downloaded {len(usable)} usable images for {len(scene_queries[:10])} scenes.")
+    if not usable:
+        raise RuntimeError("No usable story images were found. Video creation stopped.")
+    # Fill missing scene slots from the nearest available image to prevent blank openings/slides.
+    for i, asset in enumerate(scene_assets):
+        if asset is None:
+            nearest = min((j for j, x in enumerate(scene_assets) if x is not None), key=lambda j: abs(j-i))
+            scene_assets[i] = scene_assets[nearest]
+    return scene_assets
+
 
 def get_font(size):
     for p in ["/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
