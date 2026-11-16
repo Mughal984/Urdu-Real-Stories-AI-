@@ -69,11 +69,21 @@ def find_images(scene_queries):
     assets, credits = [], []
     for i, query in enumerate(scene_queries[:10]):
         try:
-            params = {"action":"query","format":"json","generator":"search","gsrsearch":query+" filetype:bitmap",
-                      "gsrnamespace":6,"gsrlimit":10,"prop":"imageinfo","iiprop":"url|extmetadata","iiurlwidth":1280}
-            data = requests.get("https://commons.wikimedia.org/w/api.php", params=params, timeout=30,
-                                headers={"User-Agent":"UrduRealStoriesAI/1.0"}).json()
-            pages = list(data.get("query",{}).get("pages",{}).values()); random.shuffle(pages)
+            params = {"action":"query","format":"json","generator":"search","gsrsearch":query,
+                      "gsrnamespace":6,"gsrlimit":20,"prop":"imageinfo","iiprop":"url|extmetadata","iiurlwidth":1280}
+            response = requests.get("https://commons.wikimedia.org/w/api.php", params=params, timeout=30,
+                                    headers={"User-Agent":"UrduRealStoriesAI/1.0"})
+            response.raise_for_status()
+            data = response.json()
+            pages = list(data.get("query",{}).get("pages",{}).values())
+            if not pages:
+                short_query = " ".join(query.split()[:3])
+                params["gsrsearch"] = short_query
+                response = requests.get("https://commons.wikimedia.org/w/api.php", params=params, timeout=30,
+                                         headers={"User-Agent":"UrduRealStoriesAI/1.0"})
+                response.raise_for_status()
+                pages = list(response.json().get("query",{}).get("pages",{}).values())
+            random.shuffle(pages)
             for page in pages:
                 info = (page.get("imageinfo") or [{}])[0]
                 image_url = info.get("thumburl") or info.get("url")
@@ -94,11 +104,20 @@ def find_images(scene_queries):
                     assets.append(target); break
         except Exception as exc: log(f"Image search for scene {i} failed: {exc}")
     (OUT/"asset_credits.json").write_text(json.dumps(credits,ensure_ascii=False,indent=2),encoding="utf-8")
+    log(f"Downloaded {len(assets)} usable Wikimedia images.")
+    if not assets:
+        raise RuntimeError("No usable story images were found. Video creation stopped instead of producing blank slides.")
     return assets
 
 def get_font(size):
     for p in ["/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
               "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"]:
+        if Path(p).exists(): return ImageFont.truetype(p,size)
+    return ImageFont.load_default()
+
+def get_latin_font(size):
+    for p in ["/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+              "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf"]:
         if Path(p).exists(): return ImageFont.truetype(p,size)
     return ImageFont.load_default()
 
@@ -114,8 +133,10 @@ def make_slides(images, scenes, title):
             except Exception: pass
         draw=ImageDraw.Draw(canvas)
         draw.rectangle((0,560,1280,720),fill=(0,0,0))
-        caption = scenes[i] if i < len(scenes) else title
-        draw.text((55,610),f"منظر {i+1}: {caption[:80]}",font=get_font(26),fill="white")
+        caption = scenes[i] if i < len(scenes) else "Story scene"
+        draw.text((55,585),f"SCENE {i+1}",font=get_latin_font(22),fill=(244,194,91))
+        draw.multiline_text((55,620),"\n".join([caption[j:j+72] for j in range(0,min(len(caption),144),72)]),
+                            font=get_latin_font(25),fill="white",spacing=8)
         path=WORK/f"slide_{i:02d}.jpg"; canvas.save(path,quality=91); slides.append(path)
     return slides
 
@@ -124,7 +145,7 @@ def create_thumbnail(text):
     d.rectangle((0,0,1280,720),fill=(18,27,46))
     d.text((70,150),"حقیقی کہانی",font=get_font(64),fill=(244,194,91))
     d.text((70,300),text[:38],font=get_font(66),fill="white",stroke_width=2,stroke_fill="black")
-    d.text((70,620),"URDU REAL STORIES",font=get_font(32),fill=(220,220,220))
+    d.text((70,620),"URDU REAL STORIES",font=get_latin_font(32),fill=(220,220,220))
     path=OUT/"thumbnail.jpg"; im.save(path,quality=94); return path
 
 def create_video(slides, audio):
