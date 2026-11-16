@@ -39,17 +39,18 @@ def research(topic):
 def write_story(topic, source_text):
     if not KEY: raise RuntimeError("GitHub secret GEMINI_API_KEY is missing.")
     prompt = f"""
-You are an accurate Urdu documentary scriptwriter.
+You are an accurate Urdu documentary scriptwriter and visual researcher.
 Write in natural spoken Pakistani Urdu using Urdu script, not Roman Urdu.
 Topic: {topic['topic']}
 Category: {topic['category']}
 Source: {topic['source']} — {topic['url']}
 Fact limits: {topic['notes']}
 Source extract: {source_text[:10000]}
-Create a compelling 5–7 minute spoken script of 850–1000 Urdu words. This word count is mandatory: do not return a short summary. Use a strong hook, detailed chronological narrative, clear transitions, context for each major event, reflective lessons, and a memorable ending. Keep every detail within the supplied Quranic/source evidence; never pad with invented scenes or dialogue.
-Never invent facts, dates, dialogue, quotes, miracles or hadith. For Islamic topics use the Quran reference named by the topic; do not attribute unsupported narrations to the Prophet (PBUH). Do not visually depict prophets or sacred figures. For historical biographies, distinguish documented facts from uncertainty.
-Return JSON only with: title_ur, narration_ur, scenes (8 to 10 concise English image search descriptions), description_ur, tags (up to 15 strings), thumbnail_text_ur.
-"""
+Create a compelling 5–7 minute spoken script of 850–1000 Urdu words. Use a strong hook, chronological narrative, context, transitions, reflective lessons and memorable ending. Stay strictly within supplied source evidence; never invent events or dialogue.
+Never invent facts, dates, dialogue, quotes, miracles or hadith. For Islamic topics do not visually depict prophets or sacred figures; use landscapes, architecture, objects and historically appropriate environments instead. For biographies, distinguish documented facts from uncertainty.
+VISUAL SCENES: Return 8–10 scenes in chronological order. Each scene must be a short, concrete English photo-search phrase describing a visible real-world subject, place, object or action. Use specific searchable nouns (e.g. ancient Egyptian palace, Nile river, desert caravan, prison stone corridor), not cinematic adjectives, emotions, abstract concepts, captions, book covers, posters or illustrations. Never request an image of a prophet or sacred figure. Do not repeat the same visual subject.
+Return JSON only with: title_ur, narration_ur, scenes, description_ur, tags (up to 15 strings), thumbnail_text_ur.
+""" 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={KEY}"
     response = requests.post(url, json={
         "contents":[{"parts":[{"text":prompt}]}],
@@ -199,13 +200,48 @@ def make_slides(images, scenes, title):
         path=WORK/f"slide_{i:02d}.jpg"; canvas.save(path,quality=91); slides.append(path)
     return slides
 
-def create_thumbnail(text):
-    im=Image.new("RGB",(1280,720),(18,27,46)); d=ImageDraw.Draw(im)
-    d.rectangle((0,0,1280,720),fill=(18,27,46))
-    d.text((70,150),"حقیقی کہانی",font=get_font(64),fill=(244,194,91))
-    d.text((70,300),text[:38],font=get_font(66),fill="white",stroke_width=2,stroke_fill="black")
-    d.text((70,620),"URDU REAL STORIES",font=get_latin_font(32),fill=(220,220,220))
-    path=OUT/"thumbnail.jpg"; im.save(path,quality=94); return path
+def create_thumbnail(text, images=None, title=""):
+    # Use the first real scene photo as the thumbnail background, never a plain text card.
+    source = None
+    for candidate in (images or []):
+        try:
+            if candidate and Path(candidate).exists():
+                source = Image.open(candidate).convert("RGB")
+                break
+        except Exception:
+            continue
+    if source is None:
+        source = Image.new("RGB",(1280,720),(18,27,46))
+    im = ImageOps.fit(source,(1280,720),method=Image.Resampling.LANCZOS)
+    overlay = Image.new("RGBA",im.size,(0,0,0,0))
+    od = ImageDraw.Draw(overlay)
+    # Dark left-to-right gradient leaves the photograph visible while keeping Urdu text readable.
+    for x in range(1280):
+        alpha = int(205 * (1 - x / 1500))
+        od.line((x,0,x,720),fill=(5,10,20,max(45,alpha)))
+    im = Image.alpha_composite(im.convert("RGBA"),overlay).convert("RGB")
+    d = ImageDraw.Draw(im)
+    d.rounded_rectangle((55,55,440,112),radius=20,fill=(190,135,35))
+    d.text((82,67),"URDU REAL STORIES",font=get_latin_font(27),fill="white")
+    headline = (text or title or "ایک حیرت انگیز کہانی").strip()
+    # Limit headline length and wrap into short Urdu lines.
+    headline = headline[:42]
+    chunks = [headline[i:i+18] for i in range(0,len(headline),18)]
+    font = get_font(72)
+    y = 250 if len(chunks) <= 2 else 205
+    for line in chunks[:3]:
+        try:
+            d.text((1200,y),line,font=font,fill="white",anchor="rt",
+                   direction="rtl",language="ur",stroke_width=3,stroke_fill=(0,0,0))
+        except (TypeError,ValueError):
+            d.text((1200,y),line,font=font,fill="white",anchor="rt",
+                   stroke_width=3,stroke_fill=(0,0,0))
+        y += 105
+    # Small visual accent and bottom bar.
+    d.rounded_rectangle((55,635,1225,650),radius=7,fill=(244,194,91))
+    path=OUT/"thumbnail.jpg"
+    im.save(path,quality=95)
+    return path
 
 def create_video(slides, audio):
     concat=WORK/"slides.txt"
@@ -255,7 +291,7 @@ def main():
     images=find_images(story["scenes"])
     slides=make_slides(images,story["scenes"],story["title_ur"])
     video=create_video(slides,audio)
-    thumbnail=create_thumbnail(story["thumbnail_text_ur"])
+    thumbnail=create_thumbnail(story["thumbnail_text_ur"], images, story["title_ur"])
     if os.getenv("UPLOAD_TO_YOUTUBE","false").lower()=="true":
         upload_to_youtube(video,thumbnail,story,topic)
     else:
