@@ -176,8 +176,9 @@ def find_images(scene_queries):
     log(f"Downloaded {len(usable)} unique images for {len(scene_queries[:10])} scenes.")
     # Do not silently repeat an unrelated photo across the whole video.
     if len(usable) < min(6, len(scene_queries[:10])):
-        raise RuntimeError(f"Only {len(usable)} unique relevant photos found; need at least 6. Retry the workflow later.")
-    return scene_assets
+        raise RuntimeError(f"Photo search temporarily returned only {len(usable)} unique images. No repeated-photo video was created; retry is safe.")
+    # Keep only successfully downloaded unique photos; never render blank slides.
+    return usable
 
 def get_font(size):
     for p in ["/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
