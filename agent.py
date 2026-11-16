@@ -9,7 +9,7 @@ ROOT = Path(__file__).parent
 OUT, WORK = ROOT / "output", ROOT / "work"
 OUT.mkdir(exist_ok=True); WORK.mkdir(exist_ok=True)
 KEY = os.getenv("GEMINI_API_KEY", "")
-MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 VOICE = os.getenv("URDU_VOICE", "ur-PK-AsadNeural")
 CATEGORY = os.getenv("STORY_CATEGORY", "auto").lower()
 
